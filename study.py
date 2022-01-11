@@ -4,8 +4,10 @@ import pryzm as pz
 import random
 import sys
 import time
+from load_dict import Dict
+td = Dict('dictionary/translate_dict.csv')
 red, green, dim, yellow = pz.Pryzm(echo=True).red, pz.Pryzm(echo=True).green, pz.Pryzm(echo=True)._dim, pz.Pryzm(echo=True).yellow
-cyan, blue = pz.Pryzm(echo=False).cyan, pz.Pryzm(echo=True).blue
+cyan, blue = pz.Pryzm(echo=True).cyan, pz.Pryzm(echo=True).blue
 
 DECK=sys.argv[1]
 
@@ -23,35 +25,31 @@ with open(DECK, 'r') as deck:
     reader = csv.reader(deck, delimiter=',')
     cards = [card for card in reader]
 
-skip_words = ['continuar', 'Vendrá', 'vendrá', 'pensar', 'pierdo', 'acabará', 'camino']
+def show_card(txt):
+    yellow(txt)
+
+def show_right(txt):
+    green(txt)
 
 os.system('clear')
-right = 0
-wrong = 0
-state = 'draw'
+right, wrong, state = 0, 0, 'draw'
 
 while cards:
+    cyan("State: {}".format(state))
 
     if state == 'draw':
-        cyan("State: draw")
         pick = random.randint(0, len(cards)-1)
         card = cards[pick]
         os.system('clear')
-        blue("CARDS: {}".format(len(cards)))
-        blue("RIGHT {}      WRONG {}".format(right, wrong))
-        state = 'sort'
 
-    elif state == 'sort':
-        cyan("State: sort")
-        if next((match for match in skip_words if match in card[1]), None):
-            del cards[pick]
-            state = 'draw'
-        else:
-            state = 'get_answer'
+        print()
+        cyan("    CARDS: {}".format(len(cards)))
+        cyan("    RIGHT {}      WRONG {}".format(right, wrong))
+        state = 'get_answer'
 
     elif state == 'get_answer':
-        cyan("State: get_answer")
-        yellow(card[0])
+        show_card(card[0])
+        definition = td.lookup(card[0].strip().lower())
         answer = _input()
         if answer == 'pass':
             dim('pass')
@@ -61,15 +59,20 @@ while cards:
             yellow("BYE!")
             sys.exit()
         elif answer.strip() == card[1].strip():
-            cyan("answer.strip() == card[1].strip()")
+            # right answer
+            blue("answer.strip() == card[1].strip()")
             right += 1
-            green(card[1])
+            show_right(card[1])
             del cards[pick]
+            cyan("\n\n"+definition)
+            blue("Sleeping 5 seconds")
             time.sleep(5)
             state = 'draw'
         else:
+            # wrong answer
             wrong += 1
             red("{}".format(card[1]))
+            cyan("\n\n"+definition)
             retry = _input()
             dim(retry)
             state = 'draw'
