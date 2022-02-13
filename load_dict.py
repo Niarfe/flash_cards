@@ -39,6 +39,8 @@ class Dict:
         return [word for word in self.get_words() if word.startswith(letters)]
 
     def lookup(self, word):
+        if re.findall(r', -.*, -', word):
+            return None
         #print("DEBUG:", word)
         def _format_w_d(word, defi):
             return "{} | {}".format(word.upper(), defi)
@@ -59,21 +61,6 @@ class Dict:
             return None
 
 
-        #def match_verb(word, rex, ending):
-        #    matches = re.match(rex, word)
-        #    if matches:
-        #        base = matches.groups(0)[0]
-        #        _word = base+ending
-        #        print("REX MATCH", rex, "ON", word, "=>", base, '-', ending)
-        #        if base:
-        #            #defi = self.lookup(_word)
-        #            defi = self.dict.get(word, None)
-        #            if not defi:
-        #                return None
-        #            else:
-        #                return _format_w_d(_word, defi)
-                
-
         rex_gen = r'(.*)(é|ée)$'
         def _base_word(word, rex, ending):
             matches = re.match(rex, word)
@@ -92,19 +79,10 @@ class Dict:
         if definition:
             return "{} | {}".format(word, definition)
         else:
-            #defi = match_v_ending(word, Dict.rexes_er, 'er')
-            #if defi:
-            #    return defi
-            
             for rexes, ending in zip([Dict.rexes_er, Dict.rexes_ir, Dict.rexes_re],['er','ir','re']):
                 defi = match_v_ending(word, rexes, ending)
                 if defi:
                     return defi
-
-            #for rex, ending in self.verb_tuples:
-            #    defi = match_verb(word, rex, ending)
-            #    if defi:
-            #        return defi
 
             if word.endswith('é'):
                 alt_verb = word[:-1]+'er'
@@ -128,8 +106,17 @@ class Dict:
             elif word.endswith('ée'):
                 alt_verb = word[:-2]+'er'
                 definition = self.dict.get(alt_verb, None)
-                if definition:
+                if definition and 'No def' not in definition:
                     return "{} | {}".format(alt_verb.upper(), definition)
+                alt_verb = word[:-3]+'er'
+                definition = self.dict.get(alt_verb, None)
+                if definition and 'No def' not in definition:
+                    return "{} | {}".format(alt_verb.upper(), definition)
+                if word.endswith('lée'):
+                    gender_word = word[:-1]+', -lée'
+                    definition = self.dict.get(gender_word, None)
+                    if definition:
+                        return "{} | {}".format(gender_word.upper(), definition)
             elif word.endswith('aient'):
                 alt_verb = word[:-5]+'er'
                 definition = self.dict.get(alt_verb, None)
@@ -162,7 +149,7 @@ class Dict:
                     return "{} | {}".format(alt_verb.upper(), definition)
             elif word.endswith('s'):
                 alt_plural = word[:-1]
-                definition = self.dict.get(alt_plural)
+                definition = self.dict.get(alt_plural, None)
                 if definition:
                     return "{} | {}".format(alt_plural.upper(), definition)
                 else:
@@ -170,7 +157,27 @@ class Dict:
                     definition = self.dict.get(alt_verb, None)
                     if definition:
                         return "{} | {}".format(alt_verb.upper(), definition)
-        
+            elif word.endswith('u'):
+                gender_word = word+', -rue'
+                definition = self.dict.get(gender_word, None)
+                if definition:
+                    return "{} | {}".format(gender_word.upper(), definition)
+            elif word.endswith('le'):
+                ir_verb = word[:-1]+'ir'
+                definition = self.dict.get(ir_verb, None)
+                if definition:
+                    return "{} | {}".format(ir_verb.upper(), definition)
+            elif word.endswith('in'):
+                ir_verb = word+'er'
+                definition = self.dict.get(ir_verb, None)
+                if definition:
+                    return "{} | {}".format(ir_verb.upper(), definition)
+
+        if not definition and word.endswith('é'):
+            definition = self.lookup(word+', -'+word[-2:]+'e') 
+        if not definition and word.endswith('ée'):
+            print("\n<"+word+">\n")
+            definition = self.lookup(word[:-1]+', -'+word[-3:]) 
         if not definition and word.endswith('s'):
             definition = self.lookup(word[:-1])
         if not definition and word.endswith('x'):
@@ -189,6 +196,14 @@ dd = Dict(test_path)
 def test_lookup_basic():
     defi = dd.lookup('talus')
     assert "embankment" in defi
+    defi = dd.lookup('bourru')
+    assert "gruff" in defi
+    defi = dd.lookup('hâlée')
+    assert "tanned" in defi
+    defi = dd.lookup('bondé')
+    assert "crammed" in defi
+    defi = dd.lookup('bondée')
+    assert "crammed" in defi
 
 def test_lookup_negative():
     defi = dd.lookup("zzzyg")
@@ -215,6 +230,8 @@ def test_lookup_er_verb_tense():
     assert "frôler".upper() in defi
     defi = dd.lookup("bouchant")
     assert "boucher 1".upper() in defi
+    defi = dd.lookup("taquin")
+    assert "taquiner".upper() in defi
 
 
 def test_lookup_ir_verb_tense():
@@ -224,6 +241,8 @@ def test_lookup_ir_verb_tense():
     assert "bondir".upper() in defi
     defi = dd.lookup("tenait")
     assert "tenir".upper() in defi
+    defi = dd.lookup("tressaille")
+    assert "tressaillir".upper() in defi
 
 #def test_lookup_re_verb_tense():
 #    defi = dd.lookup("égariez")

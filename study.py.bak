@@ -11,9 +11,6 @@ cyan, blue = pz.Pryzm(echo=True).cyan, pz.Pryzm(echo=True).blue
 
 DECK=sys.argv[1]
 
-deja_vu = []
-deja_failed = []
-
 def _input():
     try:
         response = input()
@@ -25,7 +22,7 @@ def _input():
         return response.strip()
 
 with open(DECK, 'r') as deck:
-    reader = csv.DictReader(deck)
+    reader = csv.reader(deck, delimiter=',')
     cards = [card for card in reader]
 
 def show_card(txt):
@@ -35,45 +32,47 @@ def show_right(txt):
     green(txt)
 
 os.system('clear')
-tries, wrong, state = 0, 0, 'draw'
+right, wrong, state = 0, 0, 'draw'
 
 while cards:
     cyan("State: {}".format(state))
 
     if state == 'draw':
-        tries += 1
-        card = random.choice(cards)
+        pick = random.randint(0, len(cards)-1)
+        card = cards[pick]
         os.system('clear')
 
         print()
         cyan("    CARDS: {}".format(len(cards)))
-        cyan("    TRIES {}      DEJA {}    WRONG {}".format(tries, len(deja_vu), len(deja_failed)))
+        cyan("    RIGHT {}      WRONG {}".format(right, wrong))
         state = 'get_answer'
 
     elif state == 'get_answer':
-        show_card(card['WORD'])
-        definition = td.lookup(card['WORD'].strip().lower())
+        show_card(card[0])
+        definition = td.lookup(card[0].strip().lower())
         answer = _input()
         if answer == 'pass':
             dim('pass')
+            del cards[pick]
             state = 'draw'
             continue
-        elif answer == 'quit' or answer == 'q':
+        elif answer == 'quit':
             yellow("BYE!")
             sys.exit()
 
             
-        if answer.strip() in card['DEF'].strip() or answer.lower() in definition.lower():
-            show_right(card['DEF'])
-            deja_vu.append(card)
-            cards = [c for c in cards if c['WORD'] != card['WORD']]
+        if answer.strip() == card[1].strip() or answer.lower() in definition.lower():
+            # right answer
+            right += 1
+            show_right(card[1])
+            del cards[pick]
             cyan("\n\n"+definition)
             anytext = _input()
             state = 'draw'
         else:
             # wrong answer
-            red("{}".format(card['DEF']))
-            deja_failed.append(card)
+            wrong += 1
+            red("{}".format(card[1]))
             cyan("\n\n"+definition)
             retry = _input()
             dim(retry)

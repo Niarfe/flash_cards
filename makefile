@@ -13,7 +13,15 @@ test:
 	pytest -vvx load_dict.py
 
 run:
-	python study.py decks/flash_cards_chateau_horreur_t1.csv 
+	#python study.py decks/flash_cards_chateau_horreur_t1.csv 
+	python study.py decks/vendue.csv 
 
 repl:
 	ipython -i load_dict.py
+
+update:
+	. setdeck.sh && \
+	  mv /Volumes/Transcend/Downloads/PORTAL_FRENCH\ -\ ${STACK} ${CARD_STACK}
+
+load:
+	python bin/load.py
